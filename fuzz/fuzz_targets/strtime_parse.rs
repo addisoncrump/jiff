@@ -32,7 +32,24 @@ impl<'a> Arbitrary<'a> for Input<'a> {
 }
 
 fn do_fuzz(src: Input) {
-    let _ = parse(src.format, src.input);
+    if let Ok(first) = parse(src.format, src.input) {
+        let mut unparsed = Vec::with_capacity(src.input.len());
+        first
+            .format(src.format, &mut unparsed)
+            .expect("We parsed it, so we should be able to print it.");
+        let second = parse(src.format, &unparsed)
+            .expect("Should be able to parse a printed value.");
+
+        // there's not a direct equality here
+        // to get around this, we compare unparsed with doubly-unparsed
+
+        let mut unparsed_again = Vec::with_capacity(unparsed.len());
+        second.format(src.format, &mut unparsed_again).expect(
+            "We parsed it (twice!), so we should be able to print it.",
+        );
+
+        assert_eq!(unparsed, unparsed_again, "Expected the initially parsed value to be equal to the value after printing and re-parsing.");
+    }
 }
 
 fuzz_target!(|data: Input<'_>| do_fuzz(data));

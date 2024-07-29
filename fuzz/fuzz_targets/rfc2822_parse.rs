@@ -1,16 +1,13 @@
 #![no_main]
 
-use core::str::from_utf8;
-use jiff::fmt::rfc2822::parse;
-use libfuzzer_sys::{fuzz_target, Corpus};
+use libfuzzer_sys::fuzz_target;
 
-fn do_fuzz(data: &[u8]) -> Corpus {
-    if let Ok(src) = from_utf8(data) {
-        let _ = parse(src);
-        Corpus::Keep
-    } else {
-        Corpus::Reject
-    }
+use jiff::fmt::rfc2822;
+
+fn do_fuzz(data: &[u8]) {
+    const RFC2822_PARSER: rfc2822::DateTimeParser =
+        rfc2822::DateTimeParser::new();
+    let _ = RFC2822_PARSER.parse_zoned(data);
 }
 
-fuzz_target!(|data: &[u8]| -> Corpus { do_fuzz(data) });
+fuzz_target!(|data: &[u8]| do_fuzz(data));

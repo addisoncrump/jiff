@@ -51,27 +51,31 @@ fn do_fuzz(src: Input) {
         first
             .format(src.format, &mut unparsed)
             .expect("We parsed it, so we should be able to print it");
-        if let Ok(second) = parse(src.format, &unparsed) {
-            // there's not a direct equality here
-            // to get around this, we compare unparsed with doubly-unparsed
 
-            let mut unparsed_again = Vec::with_capacity(unparsed.len());
-            second.format(src.format, &mut unparsed_again).expect(
-                "We parsed it (twice!), so we should be able to print it",
-            );
+        match parse(src.format, &unparsed) {
+            Ok(second) => {
+                // there's not a direct equality here
+                // to get around this, we compare unparsed with doubly-unparsed
 
-            assert_eq!(unparsed, unparsed_again, "Expected the initially parsed value to be equal to the value after printing and re-parsing.");
-        } else if cfg!(not(feature = "relaxed")) {
-            let unparsed_str = String::from_utf8_lossy(&unparsed);
-            panic!(
-                "Should be able to parse a printed value; failed at: `{}'{}",
-                unparsed_str,
+                let mut unparsed_again = Vec::with_capacity(unparsed.len());
+                second.format(src.format, &mut unparsed_again).expect(
+                    "We parsed it (twice!), so we should be able to print it",
+                );
+
+                assert_eq!(unparsed, unparsed_again, "Expected the initially parsed value to be equal to the value after printing and re-parsing.");
+            }
+            Err(e) if cfg!(not(feature = "relaxed")) => {
+                let unparsed_str = String::from_utf8_lossy(&unparsed);
+                panic!(
+                    "Should be able to parse a printed value; failed with `{e}' at: `{unparsed_str}'{}, corresponding to {first:?}",
                 if matches!(unparsed_str, Cow::Owned(_)) {
                     Cow::from(format!(" (lossy; actual bytes: {unparsed:?})"))
                 } else {
                     Cow::from("")
                 }
             );
+            }
+            Err(_) => {}
         }
     }
 }

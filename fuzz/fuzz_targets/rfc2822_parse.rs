@@ -16,19 +16,23 @@ fn do_fuzz(data: &[u8]) {
         RFC2822_PRINTER
             .print_zoned(&first, &mut unparsed)
             .expect("We parsed it, so we should be able to print it");
-        if let Ok(second) = RFC2822_PARSER.parse_zoned(&unparsed) {
-            assert_eq!(first, second, "Expected the initially parsed value to be equal to the value after printing and re-parsing");
-        } else if cfg!(not(feature = "relaxed")) {
-            let unparsed_str = String::from_utf8_lossy(&unparsed);
-            panic!(
-                "Should be able to parse a printed value; failed at: `{}'{}",
-                unparsed_str,
-                if matches!(unparsed_str, Cow::Owned(_)) {
-                    Cow::from(format!(" (lossy; actual bytes: {unparsed:?})"))
-                } else {
-                    Cow::from("")
-                }
-            );
+
+        match RFC2822_PARSER.parse_zoned(&unparsed) {
+            Ok(second) => {
+                assert_eq!(first, second, "Expected the initially parsed value to be equal to the value after printing and re-parsing");
+            }
+            Err(e) if cfg!(not(feature = "relaxed")) => {
+                let unparsed_str = String::from_utf8_lossy(&unparsed);
+                panic!(
+                    "Should be able to parse a printed value; failed with `{e}' at: `{unparsed_str}'{}, corresponding to {first:?}",
+                    if matches!(unparsed_str, Cow::Owned(_)) {
+                        Cow::from(format!(" (lossy; actual bytes: {unparsed:?})"))
+                    } else {
+                        Cow::from("")
+                    }
+                );
+            }
+            Err(_) => {}
         }
     }
 }

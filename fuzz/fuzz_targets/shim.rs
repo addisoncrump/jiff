@@ -14,6 +14,7 @@ extern "C" {
     fn rust_fuzzer_test_input(input: &[u8]) -> i32;
 }
 
+#[allow(unused)]
 pub fn main() -> Result<(), Box<dyn Error>> {
     let mut count = 0usize;
     unsafe {
@@ -36,7 +37,7 @@ pub fn main() -> Result<(), Box<dyn Error>> {
 #[macro_export]
 macro_rules! maybe_define_main {
     () => {
-        #[cfg(not(fuzz))]
+        #[cfg(not(fuzzing))]
         fn main() {
             let _ = $crate::shim::main();
         }

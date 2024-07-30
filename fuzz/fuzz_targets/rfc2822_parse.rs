@@ -1,4 +1,4 @@
-#![cfg_attr(fuzz, no_main)]
+#![cfg_attr(fuzzing, no_main)]
 mod shim;
 
 use libfuzzer_sys::fuzz_target;

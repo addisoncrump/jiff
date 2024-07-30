@@ -1,4 +1,5 @@
-#![no_main]
+#![cfg_attr(fuzz, no_main)]
+mod shim;
 
 use libfuzzer_sys::arbitrary::{Arbitrary, Unstructured};
 use libfuzzer_sys::{arbitrary, fuzz_target};
@@ -76,3 +77,5 @@ fn do_fuzz(src: Input) {
 }
 
 fuzz_target!(|data: Input<'_>| do_fuzz(data));
+
+maybe_define_main!();

@@ -39,3 +39,6 @@ path = "fuzz_targets/temporal_parse.rs"
 test = false
 doc = false
 bench = false
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzz)'] }

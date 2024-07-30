@@ -1,4 +1,5 @@
-#![no_main]
+#![cfg_attr(fuzz, no_main)]
+mod shim;
 
 use jiff::fmt::temporal;
 use libfuzzer_sys::fuzz_target;
@@ -32,3 +33,5 @@ fn do_fuzz(data: &[u8]) {
 }
 
 fuzz_target!(|data: &[u8]| do_fuzz(data));
+
+maybe_define_main!();

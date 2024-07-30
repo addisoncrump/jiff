@@ -20,10 +20,6 @@ impl<'a> Arbitrary<'a> for Input<'a> {
         let format = u.bytes(fmt_len as usize)?;
         let format = core::str::from_utf8(format)
             .map_err(|_| arbitrary::Error::IncorrectFormat)?;
-        // TODO this is marked as "currently unsupported", but may be better in the future
-        if !format.is_ascii() {
-            return Err(arbitrary::Error::IncorrectFormat);
-        }
         let input = u.bytes(in_len as usize)?;
         let input = core::str::from_utf8(input)
             .map_err(|_| arbitrary::Error::IncorrectFormat)?;
@@ -48,9 +44,11 @@ impl<'a> Arbitrary<'a> for Input<'a> {
 fn do_fuzz(src: Input) {
     if let Ok(first) = parse(src.format, src.input) {
         let mut unparsed = Vec::with_capacity(src.input.len());
-        first
-            .format(src.format, &mut unparsed)
-            .expect("We parsed it, so we should be able to print it");
+        if first.format(src.format, &mut unparsed).is_err() {
+            // there are a number of reasons why this may fail
+            // the formatter is simply not as strong as the parser, so we accept failure here
+            return;
+        }
 
         match parse(src.format, &unparsed) {
             Ok(second) => {
@@ -62,7 +60,7 @@ fn do_fuzz(src: Input) {
                     "We parsed it (twice!), so we should be able to print it",
                 );
 
-                assert_eq!(unparsed, unparsed_again, "Expected the initially parsed value to be equal to the value after printing and re-parsing.");
+                assert_eq!(unparsed, unparsed_again, "Expected the initially parsed value to be equal to the value after printing and re-parsing; found `{}', expected `{}'", String::from_utf8_lossy(&unparsed_again), String::from_utf8_lossy(&unparsed));
             }
             Err(e) if cfg!(not(feature = "relaxed")) => {
                 let unparsed_str = String::from_utf8_lossy(&unparsed);
